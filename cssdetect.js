@@ -4,24 +4,25 @@ function isCacheEnabled() {
     //create div
     var div = document.createElement('div');
     div.setAttribute("class", "cachedetect");
-    div.setAttribute("style", "position: absolute; top: -10000; left: -10000;");
-    document.body.appendChild(div);
-    //cache div's width
-    var w = div.offsetWidth;
-    // request the same cachedetect.js by adding <script> tag dynamically to <header>
+    div.setAttribute("style", "position: absolute; top: -10000px; left: -10000px;");
+    document.body.appendChild(div);    
+
+    appendStylesheet(div);
+}
+
+function appendStylesheet(div, w) {
     var head = document.getElementsByTagName("head")[0];
-    //find existing stylesheet and remove it (trying to force IE to reload the resource for second time)
-    links = head.getElementsByTagName('link');
-    var len = links.length;
-    for (var i = 0; i < len; i++) {
-        if (/cssdetect.ashx$/.test(links[i].href)) {
-            head.removeChild(links[i]);
-            break;
-        }
-    }
     var newStylesheetIndex = document.styleSheets.length;
+    var reported = false; //ensure we execute callback only once
     var cssLoadedCallback = function () { //store div and its current width in the closure
-        console.log('cache: ' + (w != div.offsetWidth ? 'disabled (fresh)' : 'enabled (from cache)'));
+        if (w === undefined) {//if this is a first stylesheet - measure width and load the second one
+            w = div.offsetWidth;
+            appendStylesheet(div, w);
+        }
+        else if (!reported) {
+            console.log('cache: ' + (w != div.offsetWidth ? 'disabled (fresh)' : 'enabled (from cache)'));
+        }
+        reported = true;
     };
     var link = document.createElement('link');
     link.type = "text/css";
@@ -36,20 +37,22 @@ function isCacheEnabled() {
 function runCallbackForStylesheet(index, callback) {//watch for the moment when requested css file is loaded
     try {
         if (document.styleSheets[index].cssRules) {//FF and Safari support
-            callback();
+            setTimeout(function () {
+                callback();
+            }, 250); //give browser a chance to apply styles
         } else {
             if (document.styleSheets[index].rules && document.styleSheets[index].rules.length) {
                 callback();
             } else {
                 setTimeout(function () {
-                    runCallbackForStylesheet(index);
+                    runCallbackForStylesheet(index, callback);
                 }, 250);
             }
         }
     }
     catch (e) {
         setTimeout(function () {
-            runCallbackForStylesheet(index);
+            runCallbackForStylesheet(index, callback);
         }, 250);
     }
 }
