@@ -5,10 +5,12 @@ function isCacheEnabled(prevVersion) {
         iframe.setAttribute("width", "0");
         iframe.setAttribute("height", "0");
         iframe.setAttribute("frameborder", "0");
-        iframe.src = "iframe-htmldetect.ashx";        
+        iframe.src = "iframe-htmldetect.ashx";
         var fn = function () {
-            var iframeWindow = iframe.contentWindow || iframe.contentDocument.parentWindow;
-            var doc = iframeWindow.document;
+            var doc = iframe.contentDocument;
+            if (!doc) {
+                doc = iframe.contentWindow.document;
+            }
             var version = doc.firstChild.textContent || doc.firstChild.innerText;
             if (prevVersion === undefined && version != undefined) {
                 isCacheEnabled(version);
